@@ -1,4 +1,5 @@
 var footStepBuffer = null;
+var musicBuffer = null;
 
 window.AudioContext = window.AudioContext || window.webkitAudioContext;
 var context = new AudioContext();
@@ -17,7 +18,8 @@ function loadSound(url, targetBuffer){
     request.send();
 }
 
-loadSound("step.ogg", footStepBuffer);
+loadSound("step.wav", footStepBuffer);
+loadSound("BGM_008.WAV", musicBuffer);
 
 function playSound(buffer){
     source = context.createBufferSource();

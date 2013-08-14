@@ -11,51 +11,84 @@ var camera, scene, clock, controls, renderer, stats, container;
 
 var loader = new THREE.JSONLoader();
 
+var pineloaded = false;
+
 var tex = THREE.ImageUtils.loadTexture("pinetex.png", new THREE.UVMapping(), function(){
-    loader.load("pinetree.js", createPine);
+    loader.load("pinetree.js", function(geo){
+        pineGeo = geo;
+        
+        pineloaded = true;
+        
+        init();
+        animate();
+    });
     pineMat = new THREE.MeshLambertMaterial({map: tex});
+    
 });
 
-var sceneSpeed = 0.1;
+var iglooloaded = false;
+var igloogeo, igloomat;
+
+var iglootex = THREE.ImageUtils.loadTexture("iglootex2.png", new THREE.UVMapping(), function(){
+    igloomat = new THREE.MeshLambertMaterial({map: iglootex});
+    loader.load("igloores.js", function(geo){
+        iglooloaded = true;
+        igloogeo = geo;
+    });
+});
+
+var groundTexLoaded = false;
+
+groundTex = THREE.ImageUtils.loadTexture("snowtex.png", new THREE.UVMapping(), function(){
+    groundTexLoaded = true;
+});
+
+function runIfReady(){
+    if (pineloaded && iglooloaded && groundTexLoaded){
+        init();
+        animate();
+    }
+}
 
 var pineGeo, pineMat;
 
-var trees = [];
+var objects = [];
 
+var speedFactor = 1;
 
-//TODO: this stuff
+var distFromCenter = 3;
+var treeSpread = 50;
+
 function addNewTree(){
     var tree = new THREE.Mesh(pineGeo, pineMat);
 
     tree.position.z = -40;
 
     var posx = 0;
-    while (posx > -2 && posx < 2){
-        posx = Math.random()*50-25;
+    while (posx > -distFromCenter && posx < distFromCenter){
+        posx = Math.random()*treeSpread - treeSpread/2;
     }
     tree.position.x = posx;
 
-    trees.push(tree);
+    objects.push(tree);
 
     scene.add(tree);
+
+    return tree;
 }
 
 function updateTrees(dt){
-    for (var i = 0; i < trees.length; ++i){
-        trees[i].position.z += dt*1.5;
+    for (var i = 0; i < objects.length; ++i){
+        objects[i].position.z += dt*1.5*speedFactor;
 
-        if (trees[i].position.z > 0){
-            scene.remove(trees[i]);
-            trees.splice(i, 1);
+        if (objects[i].position.z > 3){
+            scene.remove(objects[i]);
+            objects.splice(i, 1);
         }
     }
 }
 
-function createPine(geo, mat){
-    pineGeo = geo;
-    init();
-    animate();
-}
+
 
 var groundGeo, groundMat, groundTex, groundPlane;
 
@@ -101,30 +134,23 @@ function init(){
 
     scene.add( new THREE.AmbientLight(0xffffff) );
 
-    pine = new THREE.Mesh(pineGeo, new THREE.MeshLambertMaterial({map: tex}));
-    pine.position.z = -30;
-
-    //scene.add(pine);
-
     window.addEventListener("resize", onWindowResize, false);
 
-    groundTex = THREE.ImageUtils.loadTexture("snowtex.png", new THREE.UVMapping(), function(){
-        groundGeo = new THREE.PlaneGeometry(50, 50, 1, 1);
-        groundMat = new THREE.MeshLambertMaterial({map:groundTex});
-        groundPlane = new THREE.Mesh(groundGeo, groundMat);
-        
-        groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
+    groundGeo = new THREE.PlaneGeometry(50, 50, 1, 1);
+    groundMat = new THREE.MeshLambertMaterial({map:groundTex});
+    groundPlane = new THREE.Mesh(groundGeo, groundMat);
+    
+    groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
 
-        groundTex.repeat.set(10, 10);
-        
-        groundPlane.rotation.x = -90 * (Math.PI/180.0);
+    groundTex.repeat.set(10, 10);
+    
+    groundPlane.rotation.x = -90 * (Math.PI/180.0);
 
-        groundPlane.position.z = -10;
-        
-        scene.add(groundPlane);
+    groundPlane.position.z = -10;
+    
+    scene.add(groundPlane);
 
-        groundPlaneInit = true;
-    });
+    groundPlaneInit = true;
 }
 
 function onWindowResize() {
@@ -151,30 +177,99 @@ function animate(){
     stats.update();
 }
 
-var treeSpawnTime = 3;
+var treeSpawnTime = 5;
 var treeSpawnAmount = 3;
 
 var treeTime = 0;
 
+var distBetweenTrees = 3;
+
+function repositionTrees(ar){
+    var tooClose = false;
+    do{
+        tooClose = false;
+        for (var i = 0; i < ar.length-1; ++i){
+            for (var j = i + 1; j < ar.length; ++j){
+                if (Math.max(ar[i].position.x, ar[j].position.x) - Math.min(ar[i].position.x, ar[j].position.x) < distBetweenTrees){
+                    tooClose = true;
+                    
+                    var posx = 0;
+                    while (posx > -distFromCenter && posx < distFromCenter){
+                        posx = Math.random()*treeSpread - treeSpread/2;
+                    }
+                    ar[i].position.x = posx;
+                }
+            }
+        }
+    } while (tooClose);
+}
+
+var rowsSinceLastIgloo = 0;
+
 function update(dt){
     treeTime += dt*1.3;
 
-    if (treeTime > treeSpawnTime){
+    if (treeTime > treeSpawnTime/speedFactor){
+        var spawnedTrees = [];
         for (var i = 0; i < treeSpawnAmount; ++i){
-            addNewTree();
+            spawnedTrees.push(addNewTree());
         }
+        // then go over trees and see they aren't too close to each other
+        repositionTrees(spawnedTrees);
+        
+        if ((Math.random() < 0.2) && (rowsSinceLastIgloo > 2)){
+            var igloo = new THREE.Mesh(igloogeo, igloomat);
+            
+            igloo.position.z = -50;
+            igloo.position.y = 0.07;
+            
+            var posx;
+            var tooClose = false;
+            do{
+                tooClose = false;
+                posx = Math.random()*treeSpread - treeSpread/2;
+
+                for (var j = 0; j < spawnedTrees.length; ++j){
+                    if (Math.max(spawnedTrees[j].position.x, posx) - 
+                            Math.min(spawnedTrees[j].position.x, posx) < 6){
+                        tooClose = true;
+                    }
+                    if (posx > -distFromCenter && posx < distFromCenter){
+                        tooClose = true;
+                    }
+                }
+                
+            } while (tooClose);
+
+            igloo.position.x = posx;
+            
+            var centerRoadPos = new THREE.Vector3(0, 0, igloo.position.z);
+            igloo.lookAt(centerRoadPos);
+            igloo.rotation.y -= 90 * (Math.PI/180);
+            igloo.rotation.x = 0;
+            igloo.rotation.z = 0;
+            
+            scene.add(igloo);
+
+            objects.push(igloo);
+
+            rowsSinceLastIgloo = 0;
+        } else {
+            rowsSinceLastIgloo += 1;
+        }
+
         treeTime = 0;
     }
 
     updateTrees(dt);
 
     if (groundPlaneInit){
-        groundTex.offset.set(0, time*0.3);
+        groundTex.offset.set(0, time*0.3*speedFactor);
     }
 
     camera.position.y = 1.5 + Math.sin(time*10)*0.05;
     
-    camera.rotation.y = Math.sin(time*0.1)*0.5;
+    camera.rotation.y = Math.sin(time*0.2)*0.7;
 }
 
 function render(){
