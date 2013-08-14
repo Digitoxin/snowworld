@@ -19,8 +19,7 @@ var tex = THREE.ImageUtils.loadTexture("pinetex.png", new THREE.UVMapping(), fun
         
         pineloaded = true;
         
-        init();
-        animate();
+        runIfReady();   
     });
     pineMat = new THREE.MeshLambertMaterial({map: tex});
     
@@ -34,6 +33,8 @@ var iglootex = THREE.ImageUtils.loadTexture("iglootex2.png", new THREE.UVMapping
     loader.load("igloores.js", function(geo){
         iglooloaded = true;
         igloogeo = geo;
+
+        runIfReady();
     });
 });
 
@@ -41,10 +42,19 @@ var groundTexLoaded = false;
 
 groundTex = THREE.ImageUtils.loadTexture("snowtex.png", new THREE.UVMapping(), function(){
     groundTexLoaded = true;
+
+    runIfReady();
+});
+
+var snowFlakeTexLoaded = false;
+var snowFlakeTex = THREE.ImageUtils.loadTexture("snowflake.png", new THREE.UVMapping(), function(){
+    snowFlakeTexLoaded = true;
+
+    runIfReady();
 });
 
 function runIfReady(){
-    if (pineloaded && iglooloaded && groundTexLoaded){
+    if (pineloaded && iglooloaded && groundTexLoaded && snowFlakeTexLoaded){
         init();
         animate();
     }
@@ -161,7 +171,11 @@ function init(){
         particleGeometry.vertices.push( vertex );
     }
 
-    particleMaterial = new THREE.ParticleBasicMaterial( { size: 0.1, color: 0xeeeeee });
+    particleMaterial = new THREE.ParticleBasicMaterial( { size: 0.1,
+                        map: snowFlakeTex,
+                        blending: THREE.AdditiveBlending,
+                        opacity: 0.7,
+                        transparent: true });
 
     particles = new THREE.ParticleSystem( particleGeometry, particleMaterial );
     
