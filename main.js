@@ -114,9 +114,9 @@ var speeds = [];
 var minPartSpeed = 1;
 var maxPartSpeed = 2;
 
-var closestSnow = -2, furthestSnow = -10;
+var closestSnow = -2, furthestSnow = -40;
 
-var particleAmount = 4000;
+var particleAmount = 5000;
 
 function init(){
     container = document.createElement( 'div' );
@@ -174,7 +174,7 @@ function init(){
     particleMaterial = new THREE.ParticleBasicMaterial( { size: 0.1,
                         map: snowFlakeTex,
                         blending: THREE.AdditiveBlending,
-                        opacity: 0.7,
+                        color: 0xefefef,
                         transparent: true });
 
     particles = new THREE.ParticleSystem( particleGeometry, particleMaterial );
@@ -315,9 +315,9 @@ function update(dt){
     }
 
     for (var k = 0; k < particleGeometry.vertices.length; ++k){
-        particleGeometry.vertices[k].x = xPositions[k] + Math.sin((particleGeometry.vertices[k].y + particleGeometry.vertices[k].z)*0.5);
+        particleGeometry.vertices[k].x = xPositions[k] + Math.sin((particleGeometry.vertices[k].y + particleGeometry.vertices[k].z));
         particleGeometry.vertices[k].y = (particleGeometry.vertices[k].y - dt*speeds[k]);
-        particleGeometry.vertices[k].z += speedFactor*dt*0.5;
+        particleGeometry.vertices[k].z += speedFactor*dt*1.5;
         
         if (particleGeometry.vertices[k].y < 0 || particleGeometry.vertices[k].z > 3){
             particleGeometry.vertices[k].y = 5;
