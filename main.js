@@ -4,7 +4,7 @@ var WIDTH = window.innerWidth,
     HEIGHT = window.innerHeight,
     RATIO = WIDTH / HEIGHT,
     VIEW_ANGLE = 45,
-    NEAR = 1,
+    NEAR = 0.1,
     FAR = 10000;
 
 var camera, scene, clock, controls, renderer, stats, container;
@@ -67,7 +67,7 @@ var objects = [];
 var speedFactor = 1;
 
 var distFromCenter = 3;
-var treeSpread = 50;
+var treeSpread = 80;
 
 function randFloat(min, max) {
     return Math.random() * (max - min) + min;
@@ -111,12 +111,12 @@ var particleGeometry, particleMaterial, particles;
 var xPositions = [];
 var speeds = [];
 
-var minPartSpeed = 1;
-var maxPartSpeed = 2;
+var minPartSpeed = 0.5;
+var maxPartSpeed = 1.5;
 
-var closestSnow = -2, furthestSnow = -40;
+var closestSnow = -0.4, furthestSnow = -40;
 
-var particleAmount = 5000;
+var particleAmount = 10000;
 
 function init(){
     container = document.createElement( 'div' );
@@ -158,10 +158,14 @@ function init(){
     window.addEventListener("resize", onWindowResize, false);
 
     particleGeometry = new THREE.Geometry();
+    
+    var colors = [];
+
+    var colRange = 0.1;
 
     for (var i = 0; i < particleAmount; ++i){
         var vertex = new THREE.Vector3();
-        vertex.x = Math.random()*20 - 10;
+        vertex.x = Math.random()*30 - 15;
         vertex.y = Math.random()*5;
         vertex.z = randFloat(closestSnow, furthestSnow);
 
@@ -169,12 +173,18 @@ function init(){
         speeds.push(randFloat(minPartSpeed, maxPartSpeed));
 
         particleGeometry.vertices.push( vertex );
+        var col = new THREE.Color(0xffffff);
+        col.setHSL( 0, 0, 1 - Math.random()*colRange  );
+        colors.push(col);
     }
+
+    particleGeometry.colors = colors;
 
     particleMaterial = new THREE.ParticleBasicMaterial( { size: 0.1,
                         map: snowFlakeTex,
-                        blending: THREE.AdditiveBlending,
-                        color: 0xefefef,
+                        //blending: THREE.AdditiveBlending,
+                        vertexColors: true,
+                        opacity: 0.7,
                         transparent: true });
 
     particles = new THREE.ParticleSystem( particleGeometry, particleMaterial );
@@ -314,6 +324,14 @@ function update(dt){
         groundTex.offset.set(0, time*0.3*speedFactor);
     }
 
+    updateSnow(dt);
+    
+    camera.position.y = 1.5 + Math.sin(time*10)*0.05;
+    
+    camera.rotation.y = Math.sin(time*0.2)*0.7;
+}
+
+function updateSnow(dt){
     for (var k = 0; k < particleGeometry.vertices.length; ++k){
         particleGeometry.vertices[k].x = xPositions[k] + Math.sin((particleGeometry.vertices[k].y + particleGeometry.vertices[k].z));
         particleGeometry.vertices[k].y = (particleGeometry.vertices[k].y - dt*speeds[k]);
@@ -321,7 +339,7 @@ function update(dt){
         
         if (particleGeometry.vertices[k].y < 0 || particleGeometry.vertices[k].z > 3){
             particleGeometry.vertices[k].y = 5;
-            particleGeometry.vertices[k].x = Math.random()*20 - 10;
+            particleGeometry.vertices[k].x = Math.random()*30 - 15;
             particleGeometry.vertices[k].z = randFloat(closestSnow, furthestSnow);
 
             speeds[k] = randFloat(minPartSpeed, maxPartSpeed);
@@ -330,9 +348,6 @@ function update(dt){
 
     particleGeometry.verticesNeedUpdate = true;
 
-    camera.position.y = 1.5 + Math.sin(time*10)*0.05;
-    
-    camera.rotation.y = Math.sin(time*0.2)*0.7;
 }
 
 function render(){
