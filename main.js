@@ -184,7 +184,7 @@ function init(){
                         map: snowFlakeTex,
                         //blending: THREE.AdditiveBlending,
                         vertexColors: true,
-                        opacity: 0.7,
+                        opacity: 0.85,
                         transparent: true });
 
     particles = new THREE.ParticleSystem( particleGeometry, particleMaterial );
