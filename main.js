@@ -1,5 +1,7 @@
 "use strict"
 
+var speedFactor = 1;
+
 var WIDTH = window.innerWidth,
     HEIGHT = window.innerHeight,
     RATIO = WIDTH / HEIGHT,
@@ -53,8 +55,21 @@ var snowFlakeTex = THREE.ImageUtils.loadTexture("snowflake.png", new THREE.UVMap
     runIfReady();
 });
 
+var bedLoaded = false;
+var bedGeo, bedMat;
+var bedTex = THREE.ImageUtils.loadTexture("bedtex.png", new THREE.UVMapping(), function(){
+    loader.load("bed.js", function(geo){
+        
+        bedLoaded = true;
+        bedGeo = geo;
+        bedMat = new THREE.MeshLambertMaterial({map:bedTex});
+        runIfReady();
+    });
+
+});
+
 function runIfReady(){
-    if (pineloaded && iglooloaded && groundTexLoaded && snowFlakeTexLoaded){
+    if (pineloaded && iglooloaded && groundTexLoaded && snowFlakeTexLoaded && bedLoaded){
         init();
         animate();
     }
@@ -64,7 +79,6 @@ var pineGeo, pineMat;
 
 var objects = [];
 
-var speedFactor = 1;
 
 var distFromCenter = 3;
 var treeSpread = 80;
@@ -274,6 +288,39 @@ function update(dt){
         // then go over trees and see they aren't too close to each other
         repositionTrees(spawnedTrees);
         
+        // possibly spawn bed
+        if (Math.random() < 0.05){
+            var bed = new THREE.Mesh(bedGeo, bedMat);
+
+            bed.position.z = -50;
+            
+            var bedTooClose = false;
+            var bedposx;
+            do{
+                bedTooClose = false;
+                bedposx = Math.random()*treeSpread - treeSpread/2;
+
+                for (var k = 0; k < spawnedTrees.length; ++k){
+                    if (Math.max(spawnedTrees[k].position.x, bedposx) - Math.min(spawnedTrees[k].position.x, bedposx) < 3){
+                        bedTooClose = true;
+                    }
+                    if (bedposx > -distFromCenter && bedposx < distFromCenter){
+                        bedTooClose = true;
+                    }
+                }
+            } while (bedTooClose);
+
+            bed.scale.set(0.6, 0.6, 0.6);
+
+            bed.position.x = bedposx;
+
+            spawnedTrees.push(bed);
+            objects.push(bed);
+
+            scene.add(bed);
+        }
+        
+        // possibly spawn igloo
         if ((Math.random() < 0.2) && (rowsSinceLastIgloo > 2)){
             var igloo = new THREE.Mesh(igloogeo, igloomat);
             
