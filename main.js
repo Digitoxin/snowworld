@@ -68,8 +68,20 @@ var bedTex = THREE.ImageUtils.loadTexture("bedtex.png", new THREE.UVMapping(), f
 
 });
 
+var doorLoaded = false;
+var doorGeo, doorMat;
+var doorTex = THREE.ImageUtils.loadTexture("doortex.png", new THREE.UVMapping(), function(){
+    loader.load("door.js", function(geo){
+        doorLoaded = true;
+        doorGeo = geo;
+        doorMat = new THREE.MeshLambertMaterial({map:doorTex});
+        runIfReady();
+    });
+
+});
+
 function runIfReady(){
-    if (pineloaded && iglooloaded && groundTexLoaded && snowFlakeTexLoaded && bedLoaded){
+    if (pineloaded && iglooloaded && groundTexLoaded && snowFlakeTexLoaded && bedLoaded && doorLoaded){
         init();
         animate();
     }
@@ -277,6 +289,31 @@ function repositionTrees(ar){
 
 var rowsSinceLastIgloo = 0;
 
+function findPosX(ar, dist){
+    var posx = 0;
+    var tooClose = false;
+    do{
+        tooClose = false;
+        posx = Math.random()*treeSpread - treeSpread/2;
+
+        for (var i = 0; i < ar.length; ++i){
+            if (Math.max(ar[i].position.x, posx) - Math.min(ar[i].position.x, posx) < dist){
+                tooClose = true;
+            }
+            if (posx > -distFromCenter && posx < distFromCenter){
+                tooClose = true;
+            }
+        }
+    } while (tooClose);
+
+    return posx;
+
+}
+
+var rowsBetweenBeds = 10;
+var rowsAfterBed = 0;
+
+// TODO: refactor this mess
 function update(dt){
     treeTime += dt*1.3;
 
@@ -288,36 +325,35 @@ function update(dt){
         // then go over trees and see they aren't too close to each other
         repositionTrees(spawnedTrees);
         
-        // possibly spawn bed
-        if (Math.random() < 0.05){
-            var bed = new THREE.Mesh(bedGeo, bedMat);
-
-            bed.position.z = -50;
+        // possibly spawn bed or door
+        if (Math.random() < 0.05 && rowsAfterBed > rowsBetweenBeds){
+            var obj;
+            if (Math.random() < 0.5){
+                obj = new THREE.Mesh(bedGeo, bedMat);
+            } else {
+                obj = new THREE.Mesh(doorGeo, doorMat);
+            }
             
-            var bedTooClose = false;
-            var bedposx;
-            do{
-                bedTooClose = false;
-                bedposx = Math.random()*treeSpread - treeSpread/2;
+            obj.rotation.y = (Math.random()>0.5) ? 0 : 90*(Math.PI/180);
 
-                for (var k = 0; k < spawnedTrees.length; ++k){
-                    if (Math.max(spawnedTrees[k].position.x, bedposx) - Math.min(spawnedTrees[k].position.x, bedposx) < 3){
-                        bedTooClose = true;
-                    }
-                    if (bedposx > -distFromCenter && bedposx < distFromCenter){
-                        bedTooClose = true;
-                    }
-                }
-            } while (bedTooClose);
+            obj.position.z = -50;
+            
+            var objTooClose = false;
+            var objposx;
+            objposx = findPosX(spawnedTrees, 4);
 
-            bed.scale.set(0.6, 0.6, 0.6);
+            obj.scale.set(0.6, 0.6, 0.6);
 
-            bed.position.x = bedposx;
+            obj.position.x = objposx;
 
-            spawnedTrees.push(bed);
-            objects.push(bed);
+            spawnedTrees.push(obj);
+            objects.push(obj);
 
-            scene.add(bed);
+            scene.add(obj);
+
+            rowsAfterBed = 0;
+        } else {
+            rowsAfterBed += 1;
         }
         
         // possibly spawn igloo
@@ -328,22 +364,7 @@ function update(dt){
             igloo.position.y = 0.07;
             
             var posx;
-            var tooClose = false;
-            do{
-                tooClose = false;
-                posx = Math.random()*treeSpread - treeSpread/2;
-
-                for (var j = 0; j < spawnedTrees.length; ++j){
-                    if (Math.max(spawnedTrees[j].position.x, posx) - 
-                            Math.min(spawnedTrees[j].position.x, posx) < 6){
-                        tooClose = true;
-                    }
-                    if (posx > -distFromCenter && posx < distFromCenter){
-                        tooClose = true;
-                    }
-                }
-                
-            } while (tooClose);
+            posx = findPosX(spawnedTrees, 4); 
 
             igloo.position.x = posx;
             
