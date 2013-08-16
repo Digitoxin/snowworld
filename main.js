@@ -102,6 +102,8 @@ function randFloat(min, max) {
 function addNewTree(){
     var tree = new THREE.Mesh(pineGeo, pineMat);
 
+    tree.castShadow = true;
+
     tree.position.z = -40;
 
     var posx = 0;
@@ -121,7 +123,7 @@ function updateTrees(dt){
     for (var i = 0; i < objects.length; ++i){
         objects[i].position.z += dt*1.5*speedFactor;
 
-        if (objects[i].position.z > 4){
+        if (objects[i].position.z > 8){
             scene.remove(objects[i]);
             objects.splice(i, 1);
         }
@@ -144,21 +146,29 @@ var closestSnow = -0.4, furthestSnow = -40;
 
 var particleAmount = 10000;
 
+var light;
+
 function init(){
     container = document.createElement( 'div' );
     document.body.appendChild( container );
     
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(WIDTH, HEIGHT);
-    renderer.setClearColor(0xffffff);
+    renderer.setClearColor(0xffffff, 1);
+    renderer.shadowMapEnabled = true;
+    renderer.shadowMapSoft = false;
+
     container.appendChild( renderer.domElement );
 
+    scene = new THREE.Scene();
+    
     clock = new THREE.Clock();
     clock.start();
 
     camera = new THREE.PerspectiveCamera(VIEW_ANGLE, RATIO, NEAR, FAR);
-    camera.position.y = 1;
-
+    camera.position.x = 1;
+    scene.add(camera);
+    
     stats = new Stats();
     stats.domElement.style.position = 'absolute';
     stats.domElement.style.top = '0px';
@@ -175,19 +185,42 @@ function init(){
     controls.dynamicDampingFactor = 0.3;
     controls.keys = [65, 83, 68];
 
-    scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2( 0xffffff, 0.05);
-    scene.add(camera);
 
-    scene.add( new THREE.AmbientLight(0xffffff) );
+    scene.add( new THREE.AmbientLight(0xcccccc) );
 
+    light = new THREE.DirectionalLight(0xaaaaaa, 0.3);
+
+    light.position.set(0, 15, 0);
+    
+    light.castShadow = true;
+
+    light.shadowCameraFar = FAR;
+    light.shadowCameraNear = 3;
+    light.shadowDarkness = 0.4;
+    light.shadowCameraVisible = true;
+
+    light.shadowMapWidth = 1024;
+    light.shadowMapHeight = 1024;
+
+    var d = 20;
+
+    light.shadowCameraLeft = -d;
+    light.shadowCameraRight = d;
+    light.shadowCameraTop = d;
+    light.shadowCameraBottom = -d;
+
+    scene.add(light);
+
+    light.castShadow = true;
+    
     window.addEventListener("resize", onWindowResize, false);
 
     particleGeometry = new THREE.Geometry();
     
     var colors = [];
 
-    var colRange = 0.1;
+    var colRange = 0.05;
 
     for (var i = 0; i < particleAmount; ++i){
         var vertex = new THREE.Vector3();
@@ -220,7 +253,9 @@ function init(){
     scene.add(particles);
 
     groundGeo = new THREE.PlaneGeometry(50, 50, 1, 1);
-    groundMat = new THREE.MeshLambertMaterial({map:groundTex});
+    groundMat = new THREE.MeshLambertMaterial({
+        map:groundTex,
+    });
     groundPlane = new THREE.Mesh(groundGeo, groundMat);
     
     groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
@@ -230,6 +265,8 @@ function init(){
     groundPlane.rotation.x = -90 * (Math.PI/180.0);
 
     groundPlane.position.z = -10;
+
+    groundPlane.receiveShadow = true;
     
     scene.add(groundPlane);
 
@@ -333,6 +370,8 @@ function update(dt){
             } else {
                 obj = new THREE.Mesh(doorGeo, doorMat);
             }
+
+            obj.castShadow = true;
             
             obj.rotation.y = (Math.random()>0.5) ? 0 : 90*(Math.PI/180);
 
@@ -359,6 +398,8 @@ function update(dt){
         // possibly spawn igloo
         if ((Math.random() < 0.2) && (rowsSinceLastIgloo > 2)){
             var igloo = new THREE.Mesh(igloogeo, igloomat);
+
+            igloo.castShadow = true;
             
             igloo.position.z = -50;
             igloo.position.y = 0.07;
