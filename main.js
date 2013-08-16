@@ -198,7 +198,7 @@ function init(){
     light.shadowCameraFar = FAR;
     light.shadowCameraNear = 3;
     light.shadowDarkness = 0.4;
-    light.shadowCameraVisible = true;
+    light.shadowCameraVisible = false;
 
     light.shadowMapWidth = 1024;
     light.shadowMapHeight = 1024;
@@ -243,7 +243,7 @@ function init(){
                         map: snowFlakeTex,
                         //blending: THREE.AdditiveBlending,
                         vertexColors: true,
-                        opacity: 0.85,
+                        opacity: 0.98,
                         transparent: true });
 
     particles = new THREE.ParticleSystem( particleGeometry, particleMaterial );
