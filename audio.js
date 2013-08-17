@@ -1,8 +1,16 @@
 var footStepBuffer = null;
 var musicBuffer = null;
 
-window.AudioContext = window.AudioContext || window.webkitAudioContext;
-var context = new AudioContext();
+var context;
+if (!!window.AudioContext || !!window.webkitAudioContext){
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    context = new AudioContext();
+    
+    loadSound("step.wav", footStepBuffer);
+    loadSound("BGM_008.WAV", musicBuffer);
+} else {
+    console.log("No sound for you :C");
+}
 
 function loadSound(url, targetBuffer){
     var request = new XMLHttpRequest();
@@ -17,9 +25,6 @@ function loadSound(url, targetBuffer){
     };
     request.send();
 }
-
-loadSound("step.wav", footStepBuffer);
-loadSound("BGM_008.WAV", musicBuffer);
 
 function playSound(buffer){
     source = context.createBufferSource();
